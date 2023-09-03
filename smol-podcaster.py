@@ -1,6 +1,7 @@
 import argparse
 import requests
 from dotenv import load_dotenv
+import sys
 import os
 import re
 from datetime import datetime
@@ -28,6 +29,8 @@ def transcribe_audio(file_url, transcription_nudge, num_speakers, episode_name):
     
     with open(f"./podcasts-raw-transcripts/{episode_name}.json", "w") as f:
         json.dump(output, f)
+
+    print('Raw transcript saved to ./podcasts-raw-transcripts/{episode_name}.md')
 
     return output['segments']
 
@@ -62,6 +65,8 @@ def process_transcript(transcript, episode_name):
     
     with open(f"./podcasts-clean-transcripts/{episode_name}.md", "w") as f:    
         f.write(clean_transcript)
+
+    print('Transcript saved to ./podcasts-clean-transcripts/{episode_name}.md')
         
     return clean_transcript
     
@@ -227,24 +232,34 @@ def main():
     # might want to tweak the other prompts for better results.
     
     if not os.path.exists(raw_transcript_path):
+        print('Transcribing audio...', file=sys.stderr)
         transcript = transcribe_audio(
             file_url=url,
             transcription_nudge=f"{show_description}\n\nThis episode: {episode_description}\n\n",
             num_speakers=speaker_count,
             episode_name=name
         )
+        print('Transcribing audio... done')
     else:
+        print('Loading existing transcript from file')
         file = open(raw_transcript_path, "r").read()
         transcript = json.loads(file)['segments']
         
     if not os.path.exists(clean_transcript_path):
+        print('Cleaning transcript...', file=sys.stderr)
         transcript = process_transcript(transcript, name)
+        print('Cleaning transcript... done')
     else:
+        print('Loading clean transcript from file')
         transcript = open(clean_transcript_path, "r").read()
     
+    print('Creating chapters...', file=sys.stderr)
     chapters = create_chapters(transcript)
+    print('Creating show notes...', file=sys.stderr)
     show_notes = create_show_notes(transcript)
+    print('Creating recommended titles...', file=sys.stderr)
     title_suggestions_str = title_suggestions(titles, transcript)
+    print('Creating recommended titles...', file=sys.stderr)
     tweet_suggestions_str = tweet_suggestions(transcript)
 
     with open(results_file_path, "w") as f:
