@@ -12,6 +12,8 @@ import openai
 from anthropic import Anthropic, HUMAN_PROMPT, AI_PROMPT
 from upload import upload_file, get_public_url
 
+from upload import upload_file, get_public_url
+
 load_dotenv()
 
 openai.api_key = os.environ.get("OPENAI_API_KEY")
@@ -191,13 +193,13 @@ def is_url(path):
 
 def main():
     parser = argparse.ArgumentParser(description="Transcribe the podcast audio from an URL like tmpfiles.")
-    parser.add_argument("path", help="A local path or URL of the podcast audio to be processed.")
-    parser.add_argument("name", help="The name of the output transcript file without extension.")
+    parser.add_argument("path", help="The path of the podcast to be processed.")
 
     args = parser.parse_args()
 
     path = args.path
-    name = args.name
+    filename = os.path.split(path)[1]
+    name = os.path.splitext(filename)[0]
     
     raw_transcript_path = f"./podcasts-raw-transcripts/{name}.json"
     clean_transcript_path = f"./podcasts-clean-transcripts/{name}.md"
