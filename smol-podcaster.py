@@ -2,12 +2,14 @@ import argparse
 import requests
 from dotenv import load_dotenv
 import os
+import re
 from datetime import datetime
 import json
 
 import replicate
 import openai
 from anthropic import Anthropic, HUMAN_PROMPT, AI_PROMPT
+from upload import upload_file, get_public_url
 
 load_dotenv()
 
@@ -177,23 +179,36 @@ def tweet_suggestions(transcript):
     print(suggestions)
     
     return suggestions
-    
+
+def is_valid_filename(filename):
+    return bool(re.match("^[a-zA-Z0-9-_]+$", filename))
+
+def is_url(path):
+    url_regex = re.compile(r'http[s]?://.+')
+    return bool(url_regex.match(path))
+
 def main():
     parser = argparse.ArgumentParser(description="Transcribe the podcast audio from an URL like tmpfiles.")
-    parser.add_argument("url", help="The URL of the podcast to be processed.")
+    parser.add_argument("path", help="A local path or URL of the podcast audio to be processed.")
     parser.add_argument("name", help="The name of the output transcript file without extension.")
 
     args = parser.parse_args()
 
-    url = args.url
+    path = args.path
     name = args.name
     
     raw_transcript_path = f"./podcasts-raw-transcripts/{name}.json"
     clean_transcript_path = f"./podcasts-clean-transcripts/{name}.md"
     results_file_path = f"./podcasts-results/{name}.md"
 
-    print(f"Running smol-podcaster on {url}")
-    
+    print(f"Running smol-podcaster on {path}")
+    url = ''
+    if is_url(path):
+        url = path
+    else:
+        upload_file(path, f"podcasts/{name}")
+        url = get_public_url(f"podcasts/{name}")
+
     # These are probably not the most elegant solutions, but they 
     # help with saving time since transcriptions are the same but we
     # might want to tweak the other prompts for better results.
