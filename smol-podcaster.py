@@ -16,13 +16,13 @@ load_dotenv()
 openai.api_key = os.environ.get("OPENAI_API_KEY")
 anthropic = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
 
-def transcribe_audio(file_url, episode_name):
+def transcribe_audio(file_url, transcription_nudge, num_speakers, episode_name):
     output = replicate.run(
         "thomasmol/whisper-diarization:7e5dafea13d80265ea436e51a310ae5103b9f16e2039f54de4eede3060a61617",
         input={
             "file_url": file_url,
-            "num_speakers": 3,
-            "prompt": "A technical podcast about artificial intelligence and machine learning"
+            "num_speakers": num_speakers,
+            "prompt": transcription_nudge
         }
     )
     
@@ -96,15 +96,12 @@ def create_show_notes(transcript):
     
     return chapters.completion
 
-def title_suggestions(transcript):
+def title_suggestions(titles, transcript):
+    title_list = "\n".join([f"{i+1}. \"{item}\"" for i, item in enumerate(titles)])
     prompt = f"""
     These are some titles of previous podcast episodes we've published:
 
-    1. "From RLHF to RLHB: The Case for Learning from Human Behavior"
-    2. "Commoditizing the Petaflop"
-    3. "Llama 2: The New Open LLM SOTA"
-    4. "FlashAttention 2: making Transformers 800\%\ faster w/o approximation"
-    5. "Mapping the future of *truly* Open Models and Training Dolly for $30"
+    {title_list}
 
     Here's a transcript of the podcast episode; suggest 8 title options for it:
     
@@ -201,6 +198,22 @@ def main():
     clean_transcript_path = f"./podcasts-clean-transcripts/{name}.md"
     results_file_path = f"./podcasts-results/{name}.md"
 
+    show_description = "A technical podcast about artificial intelligence and machine learning"
+    episode_description = "…"
+    speaker_count = 3
+    titles =  [
+        "This Month in React – August 2023",
+        "This Month in React – July 2023",
+        "Office Hours – States of Burnout with Jenny Truong",
+        "This Month in React – June 2023",
+        "This Month in React – May 2023",
+        "Office Hours – Professional Communication with Elizabeth Woolf",
+        "This Month in React – April 2023",
+        "Community Spotlight – React Miami with Michelle Bakels",
+        "This Month In React – March 2023",
+        "Office Hours – Rewrites, with Sunil Pai and Mark Erikson",
+        "Office Hours – Becoming a leader with Ankita Kulkarni",
+    ]
     print(f"Running smol-podcaster on {path}")
     url = ''
     if is_url(path):
@@ -214,7 +227,12 @@ def main():
     # might want to tweak the other prompts for better results.
     
     if not os.path.exists(raw_transcript_path):
-        transcript = transcribe_audio(url, name)
+        transcript = transcribe_audio(
+            file_url=url,
+            transcription_nudge=f"{show_description}\n\nThis episode: {episode_description}\n\n",
+            num_speakers=speaker_count,
+            episode_name=name
+        )
     else:
         file = open(raw_transcript_path, "r").read()
         transcript = json.loads(file)['segments']
@@ -226,7 +244,7 @@ def main():
     
     chapters = create_chapters(transcript)
     show_notes = create_show_notes(transcript)
-    title_suggestions_str = title_suggestions(transcript)
+    title_suggestions_str = title_suggestions(titles, transcript)
     tweet_suggestions_str = tweet_suggestions(transcript)
 
     with open(results_file_path, "w") as f:
