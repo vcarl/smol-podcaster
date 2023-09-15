@@ -221,6 +221,9 @@ def main():
         "Office Hours – Rewrites, with Sunil Pai and Mark Erikson",
         "Office Hours – Becoming a leader with Ankita Kulkarni",
     ]
+    notable_names = [
+        "…"
+    ]
     print(f"Running smol-podcaster on {path}")
     url = ''
     if is_url(path):
@@ -237,7 +240,7 @@ def main():
         print('Transcribing audio...', file=sys.stderr)
         transcript = transcribe_audio(
             file_url=url,
-            transcription_nudge=f"{show_description}\n\nThis episode: {episode_description}\n\n",
+            transcription_nudge=f"{show_description}\n\nThis episode: {episode_description}\n\nHere are some notable names that are likely to be used in the transcript:\n{notable_names}\n\n",
             num_speakers=speaker_count,
             episode_name=name
         )
